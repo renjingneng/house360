@@ -23,9 +23,8 @@
 <body>
   <script script type="module">
     import * as THREE from './res/three.module.js';
-    import { TrackballControls } from './res/TrackballControls.js';
     // 定义全局变量
-    let scene, camera, geometry, mesh, renderer, controls
+    let scene, camera, geometry, mesh, renderer
     let sixPlane = [] // 6个面
     let spriteArrow = ""
     let raycaster = new THREE.Raycaster()
@@ -59,22 +58,50 @@
       renderer.setSize(window.innerWidth, window.innerHeight) // 设置大小
       renderer.setPixelRatio(window.devicePixelRatio) // 高清展示
       document.body.appendChild(renderer.domElement) // 生成一个canvas
+
+      var lastx=0;
+        var lasty=0;
+        var dx=0;
+        var dy=0;
+        var vectx = new THREE.Vector3(1,0, 0);
+        var vecty = new THREE.Vector3(0,1, 0);
+        var istracking=false;
+        renderer.domElement.onmousedown = function(event){
+            istracking = true;
+            console.log("down");
+        };
+        renderer.domElement.onmousemove=function(event){
+            if(!istracking){
+                return;
+            }
+            dx = event.clientX-lastx;
+            dy = event.clientY-lasty;
+            lastx = event.clientX;
+            lasty = event.clientY;
+            if(Math.abs(dx)>100 || Math.abs(dy)>100){
+                return;
+            }
+            camera.rotateOnWorldAxis(vecty, THREE.Math.degToRad(0.1)*dx);
+            vectx.applyAxisAngle(vecty,THREE.Math.degToRad(0.1)*dx);
+            camera.rotateOnWorldAxis(vectx, THREE.Math.degToRad(0.1)*dy);
+        };
+        renderer.domElement.onmouseup = function(event){
+            istracking = false;
+            console.log("up");
+        };
     }
 
     // 初始化场景
     function initScene() {
       scene = new THREE.Scene() // 生成一个场景
       const axesHelper = new THREE.AxesHelper(100) // 辅助的坐标系长度
-      //scene.add(axesHelper) // 添加到场景里面
+      scene.add(axesHelper) // 添加到场景里面
     }
 
     // 初始化相机
     function initCamera() {
-      camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 1000) // 透视相机
-      camera.position.set(0, 0, 15) // 设置相机的位置
-      controls = new TrackballControls(camera, renderer.domElement) // 设置轨迹球
-      controls.maxDistance = 2 // 控制相机的位置.因为设置的是4，所以直接是进去了，刚好贴着边是2  
-      controls.minDistance = 0
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 1, 1000) // 透视相机
+      camera.position.set(0, 0, 0) // 设置相机的位置
     }
 
     // 初始化模型
@@ -86,8 +113,8 @@
           map: texture
         })
         spriteArrow = new THREE.Sprite(spriteMaterial) // 加载材质
-        spriteArrow.scale.set(0.1, 0.1, 0.1) // 缩小图片标记 
-        spriteArrow.position.set(0, -1.5, 1.9) // 设置地面标记位置
+        spriteArrow.scale.set(0.2, 0.2, 0.2) // 缩小图片标记 
+        spriteArrow.position.set(0, -0.8, 1.9) // 设置地面标记位置
         scene.add(spriteArrow) // 将材质放入场景里面
       })
 
@@ -100,15 +127,14 @@
     // 初始化动画
     function animate() {
       requestAnimationFrame(animate)
-      controls.update() // 更新相机位置
       renderer.render(scene, camera) // 开始渲染
     }
 
     // 定义初始化方法
     function init() {
+      initCamera()
       initRenderer()
       initScene()
-      initCamera()
       initMesh()
       animate()
     }
@@ -197,7 +223,7 @@
         camera.updateProjectionMatrix() // 更新投影矩阵
         if (camera.fov == 20) {
           clearInterval(timer)
-          camera.fov = 45
+          camera.fov = 70
           camera.updateProjectionMatrix()
 
           // 删除之前的6个面
